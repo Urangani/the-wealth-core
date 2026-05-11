@@ -4,10 +4,13 @@ services:
   nats:
     image: nats:2.10
     container_name: thewealth-nats
-    command: [ "-js", "-m", "8222" ]
+    command: [ "-c", "/etc/nats/nats-server.conf" ]
     ports:
       - "4222:4222"
       - "8222:8222"
+    volumes:
+      - ./src/infrastructure/nats/nats-server.conf:/etc/nats/nats-server.conf:ro
+      - natsdata:/data
     networks:
       - core
     healthcheck:
@@ -28,6 +31,7 @@ services:
       - "15432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./src/infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
     networks:
       - core
     healthcheck:
@@ -48,6 +52,7 @@ services:
       - "5433:5432"
     volumes:
       - tsdata:/var/lib/postgresql/data
+      - ./src/infrastructure/timescaledb/init:/docker-entrypoint-initdb.d:ro
     networks:
       - core
     healthcheck:
@@ -82,7 +87,7 @@ services:
       SERVICE_NAME: market-service
       SERVICE_DIR: market-service
       SERVICE_PORT: 8000
-      NATS_URL: nats://nats:4222
+      NATS_URL: nats://thewealth:thewealth_nats@nats:4222
       POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
@@ -115,7 +120,7 @@ services:
       SERVICE_NAME: execution-service
       SERVICE_DIR: execution-service
       SERVICE_PORT: 8000
-      NATS_URL: nats://nats:4222
+      NATS_URL: nats://thewealth:thewealth_nats@nats:4222
       POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
@@ -148,7 +153,7 @@ services:
       SERVICE_NAME: strategy-service
       SERVICE_DIR: strategy-service
       SERVICE_PORT: 8000
-      NATS_URL: nats://nats:4222
+      NATS_URL: nats://thewealth:thewealth_nats@nats:4222
       POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
@@ -181,7 +186,7 @@ services:
       SERVICE_NAME: analytics-service
       SERVICE_DIR: analytics-service
       SERVICE_PORT: 8000
-      NATS_URL: nats://nats:4222
+      NATS_URL: nats://thewealth:thewealth_nats@nats:4222
       POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
@@ -214,7 +219,7 @@ services:
       SERVICE_NAME: gateway-service
       SERVICE_DIR: gateway
       SERVICE_PORT: 8000
-      NATS_URL: nats://nats:4222
+      NATS_URL: nats://thewealth:thewealth_nats@nats:4222
       POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
@@ -244,6 +249,7 @@ networks:
     internal: false
 
 volumes:
+  natsdata:
   pgdata:
   tsdata:
   redisdata:

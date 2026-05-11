@@ -5,7 +5,9 @@ Distributed event-driven trading system backbone.
 This repository currently contains the foundation layer only:
 
 - Docker Compose infrastructure for NATS, PostgreSQL, TimescaleDB, Redis, and service skeletons
-- shared event schemas
+- authenticated NATS with versioned event subjects
+- PostgreSQL and TimescaleDB initialization schemas
+- shared, versioned Pydantic event schemas
 - a shared NATS client wrapper
 - FastAPI health endpoints for every core service
 - local connectivity verification scripts
@@ -38,3 +40,10 @@ bash src/infrastructure/scripts/check_connectivity.sh
 ```
 
 See `src/docs/infrastructure.md` for the full infrastructure notes.
+See `src/docs/testing-and-debugging.md` for test, debug, Docker, and Docker Compose command snippets.
+
+Run contract tests locally:
+
+```bash
+PYTHONPATH=src pytest src/tests
+```
