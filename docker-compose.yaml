@@ -91,6 +91,14 @@ services:
       POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
+      DERIV_APP_ID: 1089
+      DERIV_WS_URL: wss://ws.derivws.com/websockets/v3?app_id=1089
+      DERIV_MARKETS: forex,synthetic_index
+      MARKET_CANDLE_GRANULARITIES: 60
+      MARKET_RECONNECT_DELAY_SECONDS: 3
+      MARKET_FALLBACK_ENABLED: "true"
+      MARKET_FALLBACK_INTERVAL_SECONDS: 1
+      FALLBACK_MARKET_SYMBOLS: frxEURUSD,R_100
     ports:
       - "8001:8000"
     depends_on:

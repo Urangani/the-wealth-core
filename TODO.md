@@ -1,47 +1,56 @@
-## Provision and Secure NATS Event Bus
+## Implement Deriv WebSocket Market Connector
 
 Description
 
-Deploy NATS in Docker with versioned topics and authentication enabled. Document pub/sub usage model. Acceptance: NATS is reachable, supports pub/sub, and enforces auth.
+Build an async Python service that connects to Deriv's WebSocket API, subscribes to tick/candle streams for all supported symbols, and handles reconnects. Acceptance: service streams live ticks/candles for SYNTH and FX symbols.
 
 Checklist
 
-[x] Deploy NATS container with config
+- [x] Connect to Deriv WS and authenticate
+- [x] Subscribe to all required symbols
+- [x] Handle reconnect and error cases
+- [x] Document implementation
 
-[x] Enable NATS authentication
-
-[x] Test pub/sub from Python client
-
-[x] documentation
-
-## Set Up PostgreSQL and TimescaleDB
+## Normalize and Publish Market Events via NATS
 
 Description
 
-Deploy PostgreSQL and TimescaleDB in Docker. Create initial schemas for users, strategies, orders, positions, events, ticks, candles, features, indicators. Acceptance: DBs are reachable, schemas are created, and tables can be queried.
+Transform raw Deriv messages into internal event format (using event contracts), publish `market.tick` and `market.candle` events to NATS (versioned topics). Acceptance: events are published, versioned, and validated by contract.
 
 Checklist
 
-[x] Deploy PostgreSQL and TimescaleDB containers
+- [x] Map Deriv data to internal event schema
+- [x] Publish events to NATS topics
+- [x] Validate event structure and versioning
+- [x] Document implementation
 
-[x] Write and apply schema migrations
-
-[x] Verify table creation and connectivity
-
-[x] documentation
-
-## Implement Base Event Contracts
+## Persist Market Data to TimescaleDB
 
 Description
 
-Define Pydantic schemas for all core events (market.tick, signal.generated, order.submitted, order.filled, position.opened, etc.) in a shared package. Version schemas and ensure importable by all services. Acceptance: Schemas are validated, versioned, and imported in tests.
+Write async handlers to store all ticks and candles in TimescaleDB, ensuring time-series indexing and retention policies. Acceptance: all received market data is persisted and queryable.
 
 Checklist
 
-[x] Write Pydantic models for all event types
+- [x] Implement async DB writes for ticks/candles
+- [x] Create indexes and retention policies
+- [x] Verify data persistence with sample queries
+- [x] Document implementation
 
-[x] Publish shared package for import
+## Stub Fallback Market Provider
 
-[x] Test event serialization/deserialization
+Description
 
-[x] documentation
+Implement a stub/fake market feed to simulate fallback provider for partial failure scenarios. Acceptance: service can switch to fallback and publish synthetic events.
+
+Checklist
+
+- [x] Add fallback provider interface
+- [x] Simulate market events when Deriv is down
+- [x] Test failover logic
+- [x] Document implementation
+
+## Notes
+
+- Implementation details: `src/docs/market-service.md`
+- Runtime and debugging commands: `src/docs/testing-and-debugging.md`

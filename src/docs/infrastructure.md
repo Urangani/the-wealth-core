@@ -12,7 +12,7 @@ The local backbone is defined in `docker-compose.yaml`:
 | `postgres` | Application state | `15432` |
 | `timescaledb` | Market data storage | `5433` |
 | `redis` | Cache and fast ephemeral state | `6379` |
-| `market-service` | Market data service skeleton | `8001` |
+| `market-service` | Deriv market stream + NATS publisher + Timescale writer | `8001` |
 | `execution-service` | Execution service skeleton | `8002` |
 | `strategy-service` | Strategy service skeleton | `8003` |
 | `analytics-service` | Analytics service skeleton | `8004` |
@@ -35,6 +35,8 @@ Infrastructure starts before service skeletons:
 9. gateway-service
 
 The Compose file enforces health-gated startup through `depends_on` conditions. Service containers connect to NATS during startup; if NATS is unavailable, the service startup fails instead of pretending the event backbone is alive.
+
+`market-service` also depends on Redis and TimescaleDB at runtime and starts its Deriv connector after infrastructure dependencies come up.
 
 ## Environment
 
@@ -151,3 +153,4 @@ bash src/infrastructure/scripts/check_connectivity.sh
 ## Testing and Debugging
 
 For copyable test commands, Docker Compose operations, log inspection, database checks, NATS debugging, and common failure flows, see `src/docs/testing-and-debugging.md`.
+For Deriv connector behavior, fallback mode, and market data persistence verification, see `src/docs/market-service.md`.

@@ -53,3 +53,6 @@ CREATE INDEX IF NOT EXISTS idx_ticks_symbol_time ON ticks (symbol, time DESC);
 CREATE INDEX IF NOT EXISTS idx_candles_symbol_timeframe_time ON candles (symbol, timeframe, time DESC);
 CREATE INDEX IF NOT EXISTS idx_features_symbol_set_time ON features (symbol, feature_set, time DESC);
 CREATE INDEX IF NOT EXISTS idx_indicators_symbol_name_time ON indicators (symbol, name, timeframe, time DESC);
+
+SELECT add_retention_policy('ticks', INTERVAL '30 days', if_not_exists => TRUE);
+SELECT add_retention_policy('candles', INTERVAL '180 days', if_not_exists => TRUE);

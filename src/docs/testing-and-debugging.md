@@ -354,3 +354,20 @@ docker compose build market-service
 docker compose up -d --force-recreate market-service
 docker compose logs --tail=100 market-service
 ```
+
+When market data is not flowing:
+
+```bash
+curl http://localhost:8001/market/status
+docker compose logs --tail=200 market-service
+docker compose exec timescaledb psql -U thewealth -d market -c "SELECT COUNT(*) FROM ticks;"
+docker compose exec timescaledb psql -U thewealth -d market -c "SELECT COUNT(*) FROM candles;"
+```
+
+Force fallback-mode test:
+
+```bash
+DERIV_WS_URL=wss://invalid.deriv.example docker compose up -d --force-recreate market-service
+curl http://localhost:8001/market/status
+docker compose logs --tail=200 market-service
+```
