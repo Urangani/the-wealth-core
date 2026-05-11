@@ -1,9 +1,18 @@
 from typing import Literal
 
+from pydantic import BaseModel, Field
+
 from .base import BaseEvent
 
 
+class SystemHealthPayload(BaseModel):
+    service: str
+    status: Literal["healthy", "degraded", "unhealthy"]
+    latency_ms: float = Field(ge=0)
+    uptime: float = Field(ge=0)
+
+
 class SystemHealthEvent(BaseEvent):
-    event_type: Literal["system.health.v1"] = "system.health.v1"
+    event_type: Literal["system.health"] = "system.health"
     event_version: str = "v1"
-    payload: dict
+    payload: SystemHealthPayload

@@ -13,3 +13,7 @@ class BaseEvent(BaseModel):
     source: str
     correlation_id: str | None = None
     payload: dict[str, Any]
+
+    @property
+    def subject(self) -> str:
+        return f"{self.event_version}.{self.event_type}"

@@ -8,7 +8,7 @@ The local backbone is defined in `docker-compose.yaml`:
 
 | Service | Purpose | Host port |
 | --- | --- | --- |
-| `nats` | Event backbone with JetStream enabled | `4222`, `8222` |
+| `nats` | Authenticated event backbone with JetStream enabled | `4222`, `8222` |
 | `postgres` | Application state | `15432` |
 | `timescaledb` | Market data storage | `5433` |
 | `redis` | Cache and fast ephemeral state | `6379` |
@@ -41,11 +41,32 @@ The Compose file enforces health-gated startup through `depends_on` conditions. 
 Service containers receive these standard URLs:
 
 ```text
-NATS_URL=nats://nats:4222
+NATS_URL=nats://thewealth:thewealth_nats@nats:4222
 POSTGRES_URL=postgresql://thewealth:thewealth@postgres:5432/thewealth
 TIMESCALE_URL=postgresql://thewealth:thewealth@timescaledb:5432/market
 REDIS_URL=redis://redis:6379
 ```
+
+## NATS
+
+NATS is configured by `src/infrastructure/nats/nats-server.conf`. Authentication is required; services use the `thewealth` application user through `NATS_URL`.
+
+Event subjects are versioned with this format:
+
+```text
+v1.<event_type>
+```
+
+Examples:
+
+- `v1.market.tick`
+- `v1.signal.generated`
+- `v1.order.submitted`
+- `v1.order.filled`
+- `v1.position.opened`
+- `v1.system.health`
+
+Publish typed events through `NatsClient.publish_event(event)`. Subscribe to explicit subjects or wildcard groups, for example `v1.market.*` for market data consumers and `v1.order.*` for execution/order projections.
 
 ## Event Contract
 
@@ -63,15 +84,39 @@ Every event includes:
 
 The first concrete events are:
 
+- `market.tick`
+- `market.candle`
 - `signal.generated`
 - `order.submitted`
-- `system.health.v1`
+- `order.filled`
+- `position.opened`
+- `position.closed`
+- `system.health`
 
 The NATS wrapper in `src/shared/nats_client.py` enforces this hard rule:
 
 ```text
 No service can publish "order.*" events except execution-service.
 ```
+
+## Database Schemas
+
+PostgreSQL initialization SQL lives in `src/infrastructure/postgres/init` and creates:
+
+- `users`
+- `strategies`
+- `orders`
+- `positions`
+- `events`
+
+TimescaleDB initialization SQL lives in `src/infrastructure/timescaledb/init` and creates hypertables for:
+
+- `ticks`
+- `candles`
+- `features`
+- `indicators`
+
+The init scripts run automatically on first container startup when the Docker volumes are empty. If an existing local volume predates the scripts, recreate it with `docker compose down -v` before starting the stack again.
 
 ## Run
 
@@ -102,3 +147,7 @@ Run the helper script after the stack is up:
 ```bash
 bash src/infrastructure/scripts/check_connectivity.sh
 ```
+
+## Testing and Debugging
+
+For copyable test commands, Docker Compose operations, log inspection, database checks, NATS debugging, and common failure flows, see `src/docs/testing-and-debugging.md`.
