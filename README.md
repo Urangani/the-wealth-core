@@ -40,9 +40,30 @@ Run connectivity checks once the stack is healthy:
 bash src/infrastructure/scripts/check_connectivity.sh
 ```
 
-See `src/docs/infrastructure.md` for the full infrastructure notes.
-See `src/docs/testing-and-debugging.md` for test, debug, Docker, and Docker Compose command snippets.
-See `src/docs/market-service.md` for Deriv connector, failover, and market persistence details.
+To test Deriv `active_symbols` directly without the full service:
+
+```bash
+python src/infrastructure/scripts/fetch_deriv_active_symbols.py
+```
+
+## Deriv API Setup
+
+The system can connect to Deriv public market data without authentication by setting:
+
+```bash
+DERIV_WS_URL=wss://api.derivws.com/trading/v1/options/ws/public
+DERIV_API_TOKEN=
+```
+
+If you want authenticated trading access later, provide your own `DERIV_APP_ID` and `DERIV_API_TOKEN`.
+
+1. Get your own Deriv App ID and API Token from [Deriv API Dashboard](https://app.deriv.com/account/api-token)
+2. Run the setup script: `./setup_deriv.sh`
+3. Or manually update the `.env` file with your credentials
+
+See `src/docs/deriv-api.md` for detailed API documentation.
+
+**Note:** The demo App ID (1089) included in the configuration is rate-limited and may not work reliably for extended use.
 
 Run contract tests locally:
 

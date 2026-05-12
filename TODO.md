@@ -37,17 +37,18 @@ Checklist
 - [x] Verify data persistence with sample queries
 - [x] Document implementation
 
-## Stub Fallback Market Provider
+## Setup Deriv API Credentials
 
 Description
 
-Implement a stub/fake market feed to simulate fallback provider for partial failure scenarios. Acceptance: service can switch to fallback and publish synthetic events.
+Configure proper Deriv App ID and API Token for reliable market data access. The demo credentials are rate-limited.
 
 Checklist
 
-- [x] Add fallback provider interface
-- [x] Simulate market events when Deriv is down
-- [x] Test failover logic
+- [x] Document Deriv API endpoints and WebSocket usage
+- [x] Create setup script for credential configuration
+- [x] Update environment configuration
+- [ ] Obtain and configure personal Deriv App ID and API Token
 - [x] Document implementation
 
 ## Notes

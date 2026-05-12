@@ -118,6 +118,11 @@ class DerivWebSocketConnector:
                     continue
 
     async def _load_symbols(self, ws: websockets.WebSocketClientProtocol) -> list[DerivSymbol]:
+        if self.settings.symbol_allowlist:
+            # If a symbol allowlist is configured, avoid active symbol discovery
+            # and subscribe directly to the provided symbols.
+            return [DerivSymbol(symbol=symbol, market="unknown") for symbol in self.settings.symbol_allowlist]
+
         await self._send(
             ws,
             {
@@ -133,10 +138,6 @@ class DerivWebSocketConnector:
             if not symbol or not market:
                 continue
             symbols.append(DerivSymbol(symbol=symbol, market=market))
-
-        if self.settings.symbol_allowlist:
-            allowlist = set(self.settings.symbol_allowlist)
-            return [item for item in symbols if item.symbol in allowlist]
 
         return [item for item in symbols if item.market in self.settings.deriv_symbol_filter_markets]
 
