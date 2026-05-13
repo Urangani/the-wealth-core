@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import time
@@ -10,6 +11,10 @@ import asyncpg
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from httpx import AsyncClient
+
+from services.gateway.providers.mock import MockAccountProvider, MockLogProvider, MockTradeProvider
+from services.gateway.providers.timescale_market import TimescaleMarketDataProvider
+from services.gateway.routes import account, journal, logs, market, review, risk, strategies, stream, trades
 
 SERVICE_UPSTREAMS = {
     "market-service": os.getenv("MARKET_SERVICE_URL", "http://market-service:8000"),
@@ -30,15 +35,38 @@ def create_gateway_app() -> FastAPI:
     pool: asyncpg.Pool | None = None
     http = AsyncClient(timeout=5)
 
+    account_provider = MockAccountProvider()
+    trade_provider = MockTradeProvider()
+    log_provider = MockLogProvider()
+    market_provider = TimescaleMarketDataProvider()
+
+    stream_task: asyncio.Task[None] | None = None
+    from services.gateway.routes.stream import _positions, _stream_loop
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        nonlocal pool
+        nonlocal pool, stream_task
         try:
             pool = await asyncpg.create_pool(TIMESCALE_URL, min_size=1, max_size=5, timeout=10)
         except Exception:
             LOGGER.exception("Failed to connect to TimescaleDB")
             pool = None
+
+        market_provider.set_pool(pool)
+        app.state.account_provider = account_provider
+        app.state.trade_provider = trade_provider
+        app.state.log_provider = log_provider
+        app.state.market_provider = market_provider
+
+        _positions.clear()
+        _positions.extend(trade_provider._positions)
+
+        stream_task = asyncio.create_task(_stream_loop())
+        LOGGER.info("Gateway started with mock providers")
         yield
+
+        if stream_task:
+            stream_task.cancel()
         if pool:
             await pool.close()
         await http.aclose()
@@ -52,6 +80,7 @@ def create_gateway_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # ── Health / Readiness ────────────────────────────────────────────────
     @app.get("/health")
     async def health() -> dict[str, Any]:
         db_ok = pool is not None and not pool._closed
@@ -69,6 +98,7 @@ def create_gateway_app() -> FastAPI:
             "ready": pool is not None and not pool._closed,
         }
 
+    # ── Existing prefixed routes (backward compat) ────────────────────────
     @app.get(f"{API_PREFIX}/market/status")
     async def market_status() -> dict[str, Any]:
         url = f"{SERVICE_UPSTREAMS['market-service']}/market/status"
@@ -159,6 +189,17 @@ def create_gateway_app() -> FastAPI:
                 results[name] = {"status": "unreachable"}
                 all_healthy = False
         return {"status": "healthy" if all_healthy else "degraded", "services": results}
+
+    # ── UI-facing bare-path routes (drop-in for TradeCore) ────────────────
+    app.include_router(account.router)
+    app.include_router(trades.router)
+    app.include_router(journal.router)
+    app.include_router(strategies.router)
+    app.include_router(logs.router)
+    app.include_router(review.router)
+    app.include_router(risk.router)
+    app.include_router(market.router)
+    app.include_router(stream.router)
 
     return app
 

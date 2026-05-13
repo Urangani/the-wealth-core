@@ -109,6 +109,10 @@ services:
       POSTGRES_URL: postgresql://thewealth:thewealth@timescaledb:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
+      RISK_MAX_LOT: 0.5
+      RISK_MAX_OPEN_TRADES: 5
+      RISK_MAX_DAILY_LOSS: -50
+      RISK_ALLOWED_SYMBOLS: EURUSD,GBPUSD,USDJPY
     ports:
       - "8005:8000"
     depends_on:
@@ -126,6 +130,22 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  ui-service:
+    build:
+      context: ../the-wealth-ui
+      dockerfile: Dockerfile
+    container_name: thewealth-ui
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_BASE_URL: http://gateway-service:8000
+      VITE_WS_URL: ws://gateway-service:8000/ws/market
+    depends_on:
+      gateway-service:
+        condition: service_healthy
+    networks:
+      - core
 
 networks:
   core:

@@ -21,6 +21,9 @@ select = ["E", "F", "I", "W", "UP", "N", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/tests/*" = ["D"]
+"src/services/gateway/routes/*" = ["B008", "N815"]
+"src/services/gateway/providers/mock.py" = ["E501"]
+"src/services/gateway/routes/stream.py" = ["E501", "N815"]
 
 [tool.ruff.format]
 preview = true
