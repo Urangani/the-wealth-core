@@ -146,6 +146,120 @@ curl http://localhost:8222/varz
 python src/infrastructure/scripts/check_nats_pubsub.py
 ```
 
+## AppMap — Code Recording & Analysis
+
+AppMap records your code execution as interactive diagrams: function call trees, HTTP request/response flows, SQL queries, and dependency maps.
+
+### Setup
+
+AppMap is already configured in the project:
+
+| File | Purpose |
+|------|---------|
+| `appmap.yml` | Defines which Python packages to record (`shared` module) |
+| `.vscode/extensions.json` | Recommends the AppMap VS Code extension |
+| `requirements.txt` | `appmap==3.0.0` |
+
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt   # already done by setup_local.sh
+```
+
+### Record Test Execution
+
+```bash
+APPMAP=true PYTHONPATH=src pytest src/tests -v
+```
+
+Each test generates an `.appmap.json` file in `tmp/appmap/pytest/`.
+
+Record a single test:
+
+```bash
+APPMAP=true PYTHONPATH=src pytest src/tests/test_event_contracts.py -k "market_tick" -v
+```
+
+### Record HTTP Traffic (uvicorn)
+
+```bash
+APPMAP=true uvicorn main:app --port 8001 --app-dir src/services/market-service
+```
+
+Then hit any endpoint (e.g. `curl http://localhost:8001/health`). AppMap records the request/response cycle to `tmp/appmap/`.
+
+### View Recordings
+
+Three methods, from quickest to richest:
+
+#### 1. CLI Stats (terminal)
+
+```bash
+# Install the viewer (one-time)
+npx @appland/appmap-cli
+
+# Show summary of all recordings
+npx @appland/appmap-cli stats tmp/appmap/
+```
+
+Prints a per-test breakdown: number of HTTP requests, SQL queries, function calls, and labels.
+
+#### 2. Local Browser Viewer (sequence diagrams)
+
+```bash
+npx @appland/appmap-cli open tmp/appmap/
+```
+
+Opens a local web UI with:
+- **Sequence diagrams** — see which functions called what, in order
+- **Trace view** — follow the request through your code with timings
+- **Dependency map** — how packages and classes relate
+- **SQL view** — every database query with parameters and results
+
+#### 3. VS Code Extension (in-editor)
+
+1. Open the project in VS Code — the `.vscode/extensions.json` prompts you to install "AppMap"
+2. Or install manually: open Extensions panel → search for "AppMap" by AppLand
+3. Open any `.appmap.json` file from `tmp/appmap/pytest/` → full diagram viewer inside the editor
+
+### What AppMap Records
+
+| Data | Example |
+|------|---------|
+| Function calls | `shared.events.BaseEvent.model_dump()` → called from test |
+| HTTP requests | `GET /health` → status code, headers, response body |
+| SQL queries | `INSERT INTO ticks (...)` → parameters, row count |
+| Labels | `security.authentication`, `database.insert` |
+| Class dependencies | `NatsClient` → `BaseEvent`, `MarketPipeline` → `DerivWebSocketConnector` |
+
+### Configuration (`appmap.yml`)
+
+```yaml
+name: the-wealth-core
+packages:
+  - path: shared
+    shallow: true
+```
+
+- `path`: Python module name (not filesystem path). `shared` is the only importable package.
+- `shallow: true`: only record direct dependencies of `shared`, not third-party libraries.
+
+### Clean Up Recordings
+
+```bash
+rm -rf tmp/appmap/
+```
+
+The `tmp/` and `.appmap/` directories are gitignored.
+
+### Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `Module already imported so cannot be rewritten` | Set `APPMAP=true` before importing any project code (always set before pytest) |
+| No `.appmap.json` files generated | Confirm `APPMAP=true` is set and `appmap` plugin appears in `pytest --plugins` |
+| Viewer not found (`npx`) | Install Node.js (v18+) which includes npx |
+| Viewer shows empty diagrams | Some recordings have no HTTP/SQL if the test doesn't trigger those paths — function call data is still captured |
+
 ## Dev vs QA Comparison
 
 | Aspect | Dev (this setup) | QA (docker compose) |

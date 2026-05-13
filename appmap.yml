@@ -1,0 +1,4 @@
+name: the-wealth-core
+packages:
+  - path: shared
+    shallow: true

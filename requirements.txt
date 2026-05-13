@@ -6,3 +6,4 @@ redis==5.0.1
 asyncpg==0.30.0
 websockets==14.1
 pytest==8.3.4
+appmap==3.0.0

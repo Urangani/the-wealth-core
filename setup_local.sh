@@ -90,18 +90,30 @@ elif docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'thewealth-infra.*red
 fi
 $redis_ok && ok "Redis reachable" || warn "Redis not detected — start it with:  docker compose -f docker-compose.infra.yaml up -d redis"
 
-# ── 4. PYTHONPATH helper ────────────────────────────────────────
-info "Setting up PYTHONPATH persistence..."
+# ── 4. Activate helpers ─────────────────────────────────────────
+info "Setting up persistent env vars in .venv/bin/activate..."
 ACTIVATE_FILE=".venv/bin/activate"
+
 if ! grep -q 'PYTHONPATH' "$ACTIVATE_FILE" 2>/dev/null; then
     cat >> "$ACTIVATE_FILE" << 'PYEOF'
 
 # The Wealth Core: set PYTHONPATH=src for imports
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}${VIRTUAL_ENV}/../src"
 PYEOF
-    ok "PYTHONPATH=src appended to .venv/bin/activate"
+fi
+
+if ! grep -q 'NATS_URL' "$ACTIVATE_FILE" 2>/dev/null; then
+    cat >> "$ACTIVATE_FILE" << 'ENVEOF'
+
+# The Wealth Core: infrastructure URLs (localhost for local dev)
+export NATS_URL="nats://thewealth:thewealth_nats@localhost:4222"
+export POSTGRES_URL="postgresql://thewealth:thewealth@localhost:15432/thewealth"
+export TIMESCALE_URL="postgresql://thewealth:thewealth@localhost:5433/market"
+export REDIS_URL="redis://localhost:6379"
+ENVEOF
+    ok "Infrastructure URLs appended to .venv/bin/activate"
 else
-    ok "PYTHONPATH already set in .venv/bin/activate"
+    ok "ENV vars already set in .venv/bin/activate"
 fi
 
 # ── 5. Summary ──────────────────────────────────────────────────

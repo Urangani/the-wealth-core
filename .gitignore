@@ -26,7 +26,8 @@ temp/
 
 # Editors and OS files
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 *.swp
 *.swo
 .DS_Store
@@ -36,6 +37,9 @@ Thumbs.db
 docker-compose.override.yaml
 data/
 volumes/
+
+# AppMap recordings
+.appmap/
 
 # AI
 AGENTS.md
