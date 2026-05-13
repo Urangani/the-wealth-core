@@ -65,7 +65,7 @@ info "Checking infrastructure reachability..."
 nats_ok=false
 if command -v nats-server &>/dev/null; then
     nats_ok=true
-elif docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'thewealth-nats'; then
+elif docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'thewealth-infra.*nats'; then
     nats_ok=true
 fi
 $nats_ok && ok "NATS reachable" || warn "NATS not detected — start it with:  docker compose -f docker-compose.infra.yaml up -d nats"
@@ -85,7 +85,7 @@ $ts_ok && ok "TimescaleDB reachable at localhost:5433" || warn "TimescaleDB not 
 redis_ok=false
 if command -v redis-cli &>/dev/null && redis-cli -h localhost -p 6379 ping 2>/dev/null; then
     redis_ok=true
-elif docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'thewealth-redis'; then
+elif docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'thewealth-infra.*redis'; then
     redis_ok=true
 fi
 $redis_ok && ok "Redis reachable" || warn "Redis not detected — start it with:  docker compose -f docker-compose.infra.yaml up -d redis"

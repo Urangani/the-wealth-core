@@ -3,7 +3,6 @@ name: thewealth-infra
 services:
   nats:
     image: nats:2.10
-    container_name: thewealth-nats
     command: [ "-c", "/etc/nats/nats-server.conf" ]
     ports:
       - "4222:4222"
@@ -13,14 +12,13 @@ services:
       - natsdata:/data
     healthcheck:
       test: [ "CMD", "nats-server", "--signal", "reload=1" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 5s
 
   postgres:
     image: postgres:16
-    container_name: thewealth-postgres
     environment:
       POSTGRES_USER: thewealth
       POSTGRES_PASSWORD: thewealth
@@ -32,14 +30,13 @@ services:
       - ./src/infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U thewealth -d thewealth" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
 
   timescaledb:
     image: timescale/timescaledb:latest-pg16
-    container_name: thewealth-timescale
     environment:
       POSTGRES_USER: thewealth
       POSTGRES_PASSWORD: thewealth
@@ -51,21 +48,20 @@ services:
       - ./src/infrastructure/timescaledb/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U thewealth -d market" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 15s
 
   redis:
     image: redis:7
-    container_name: thewealth-redis
     ports:
       - "6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 5s

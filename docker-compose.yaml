@@ -15,7 +15,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD", "nats-server", "--signal", "reload=1" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 5s
@@ -36,7 +36,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U thewealth -d thewealth" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -57,7 +57,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U thewealth -d market" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 15s
@@ -73,7 +73,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 5s
@@ -114,7 +114,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -147,7 +147,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -180,7 +180,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -213,7 +213,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
@@ -246,7 +246,7 @@ services:
       - core
     healthcheck:
       test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
-      interval: 10s
+      interval: 30s
       timeout: 5s
       retries: 5
       start_period: 10s
