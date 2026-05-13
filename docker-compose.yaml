@@ -20,30 +20,9 @@ services:
       retries: 5
       start_period: 5s
 
-  postgres:
-    image: postgres:16
-    container_name: thewealth-postgres
-    environment:
-      POSTGRES_USER: thewealth
-      POSTGRES_PASSWORD: thewealth
-      POSTGRES_DB: thewealth
-    ports:
-      - "15432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./src/infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
-    networks:
-      - core
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U thewealth -d thewealth" ]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   timescaledb:
     image: timescale/timescaledb:latest-pg16
-    container_name: thewealth-timescale
+    container_name: thewealth-db
     environment:
       POSTGRES_USER: thewealth
       POSTGRES_PASSWORD: thewealth
@@ -51,7 +30,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - tsdata:/var/lib/postgresql/data
+      - dbdata:/var/lib/postgresql/data
       - ./src/infrastructure/timescaledb/init:/docker-entrypoint-initdb.d:ro
     networks:
       - core
@@ -88,7 +67,7 @@ services:
       SERVICE_DIR: market-service
       SERVICE_PORT: 8000
       NATS_URL: nats://thewealth:thewealth_nats@nats:4222
-      POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
+      POSTGRES_URL: postgresql://thewealth:thewealth@timescaledb:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
       DERIV_APP_ID: 1089
@@ -103,107 +82,6 @@ services:
       - "8001:8000"
     depends_on:
       nats:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      timescaledb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - core
-    healthcheck:
-      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  execution-service:
-    build:
-      context: .
-      dockerfile: src/services/Dockerfile
-    container_name: thewealth-execution-service
-    environment:
-      SERVICE_NAME: execution-service
-      SERVICE_DIR: execution-service
-      SERVICE_PORT: 8000
-      NATS_URL: nats://thewealth:thewealth_nats@nats:4222
-      POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
-      TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
-      REDIS_URL: redis://redis:6379
-    ports:
-      - "8002:8000"
-    depends_on:
-      nats:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      timescaledb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - core
-    healthcheck:
-      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  strategy-service:
-    build:
-      context: .
-      dockerfile: src/services/Dockerfile
-    container_name: thewealth-strategy-service
-    environment:
-      SERVICE_NAME: strategy-service
-      SERVICE_DIR: strategy-service
-      SERVICE_PORT: 8000
-      NATS_URL: nats://thewealth:thewealth_nats@nats:4222
-      POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
-      TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
-      REDIS_URL: redis://redis:6379
-    ports:
-      - "8003:8000"
-    depends_on:
-      nats:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      timescaledb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - core
-    healthcheck:
-      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)\"" ]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  analytics-service:
-    build:
-      context: .
-      dockerfile: src/services/Dockerfile
-    container_name: thewealth-analytics-service
-    environment:
-      SERVICE_NAME: analytics-service
-      SERVICE_DIR: analytics-service
-      SERVICE_PORT: 8000
-      NATS_URL: nats://thewealth:thewealth_nats@nats:4222
-      POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
-      TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
-      REDIS_URL: redis://redis:6379
-    ports:
-      - "8004:8000"
-    depends_on:
-      nats:
-        condition: service_healthy
-      postgres:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
@@ -228,15 +106,13 @@ services:
       SERVICE_DIR: gateway
       SERVICE_PORT: 8000
       NATS_URL: nats://thewealth:thewealth_nats@nats:4222
-      POSTGRES_URL: postgresql://thewealth:thewealth@postgres:5432/thewealth
+      POSTGRES_URL: postgresql://thewealth:thewealth@timescaledb:5432/thewealth
       TIMESCALE_URL: postgresql://thewealth:thewealth@timescaledb:5432/market
       REDIS_URL: redis://redis:6379
     ports:
       - "8005:8000"
     depends_on:
       nats:
-        condition: service_healthy
-      postgres:
         condition: service_healthy
       timescaledb:
         condition: service_healthy
@@ -258,6 +134,5 @@ networks:
 
 volumes:
   natsdata:
-  pgdata:
-  tsdata:
+  dbdata:
   redisdata:

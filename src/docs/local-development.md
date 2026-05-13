@@ -5,16 +5,15 @@ Run Python services directly on your host for fast iteration while Docker manage
 ## Architecture
 
 ```
-┌────────────────────────────────────────────────┐
-│  Host (your machine)            Docker          │
-│                                             │
-│  source .venv/bin/activate       ┌──────────────┐
-│  uvicorn main:app --reload       │  nats:4222   │
-│  pytest src/tests                 │  postgres:15432│
-│                                  │  timescale:5433│
-│  PYTHONPATH=src                   │  redis:6379   │
-│                                  └──────────────┘
-└────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│  Host (your machine)              Docker          │
+│                                                  │
+│  source .venv/bin/activate        ┌──────────────┐
+│  uvicorn main:app --reload        │  nats:4222   │
+│  pytest src/tests                 │  timescale:5433│
+│                                  │  redis:6379   │
+│  PYTHONPATH=src                   └──────────────┘
+└──────────────────────────────────────────────────┘
 ```
 
 - **Dev** — services run via `uvicorn` on the host, connect to `localhost:*`
@@ -77,7 +76,7 @@ docker compose -f docker-compose.infra.yaml ps
 # View logs
 docker compose -f docker-compose.infra.yaml logs -f
 
-# Restart one service (e.g., after changing NATS config)
+# Restart one service
 docker compose -f docker-compose.infra.yaml restart nats
 
 # Stop infra (data persists in Docker volumes)
@@ -94,15 +93,6 @@ Each service runs as a standalone `uvicorn` process on the host:
 ```bash
 # Market service (port 8001)
 uvicorn main:app --reload --port 8001 --app-dir src/services/market-service
-
-# Execution service (port 8002)
-uvicorn main:app --reload --port 8002 --app-dir src/services/execution-service
-
-# Strategy service (port 8003)
-uvicorn main:app --reload --port 8003 --app-dir src/services/strategy-service
-
-# Analytics service (port 8004)
-uvicorn main:app --reload --port 8004 --app-dir src/services/analytics-service
 
 # Gateway (port 8005)
 uvicorn main:app --reload --port 8005 --app-dir src/services/gateway
@@ -126,10 +116,10 @@ pytest src/tests/test_event_contracts.py -k "market_tick"
 ### Access databases
 
 ```bash
-# PostgreSQL (app state)
-psql -h localhost -p 15432 -U thewealth -d thewealth
+# App state (thewealth database)
+psql -h localhost -p 5433 -U thewealth -d thewealth
 
-# TimescaleDB (market data)
+# Market data (market database)
 psql -h localhost -p 5433 -U thewealth -d market
 ```
 
@@ -272,6 +262,7 @@ The `tmp/` and `.appmap/` directories are gitignored.
 | Hot reload | Yes (`--reload`) | No |
 | Debugger | Full host debugger support | Requires remote debugger |
 | Reproducibility | System-dependent | Isolated, consistent |
+| DB host port | `5433` (single TimescaleDB) | `5433` (same) |
 
 Both can run simultaneously — they don't share ports or volumes.
 

@@ -33,7 +33,7 @@ if [ ! -f .env ]; then
     info "Creating .env from .env.example with localhost URLs..."
     cat > .env << 'ENVEOF'
 NATS_URL=nats://thewealth:thewealth_nats@localhost:4222
-POSTGRES_URL=postgresql://thewealth:thewealth@localhost:15432/thewealth
+POSTGRES_URL=postgresql://thewealth:thewealth@localhost:5433/thewealth
 TIMESCALE_URL=postgresql://thewealth:thewealth@localhost:5433/market
 REDIS_URL=redis://localhost:6379
 
@@ -70,17 +70,11 @@ elif docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'thewealth-infra.*nat
 fi
 $nats_ok && ok "NATS reachable" || warn "NATS not detected — start it with:  docker compose -f docker-compose.infra.yaml up -d nats"
 
-pg_ok=false
-if pg_isready -h localhost -p 15432 -U thewealth &>/dev/null; then
-    pg_ok=true
-fi
-$pg_ok && ok "PostgreSQL reachable at localhost:15432" || warn "PostgreSQL not detected — start with:  docker compose -f docker-compose.infra.yaml up -d postgres"
-
-ts_ok=false
+db_ok=false
 if pg_isready -h localhost -p 5433 -U thewealth &>/dev/null; then
-    ts_ok=true
+    db_ok=true
 fi
-$ts_ok && ok "TimescaleDB reachable at localhost:5433" || warn "TimescaleDB not detected — start with:  docker compose -f docker-compose.infra.yaml up -d timescaledb"
+$db_ok && ok "TimescaleDB reachable at localhost:5433" || warn "TimescaleDB not detected — start with:  docker compose -f docker-compose.infra.yaml up -d timescaledb"
 
 redis_ok=false
 if command -v redis-cli &>/dev/null && redis-cli -h localhost -p 6379 ping 2>/dev/null; then
@@ -107,7 +101,7 @@ if ! grep -q 'NATS_URL' "$ACTIVATE_FILE" 2>/dev/null; then
 
 # The Wealth Core: infrastructure URLs (localhost for local dev)
 export NATS_URL="nats://thewealth:thewealth_nats@localhost:4222"
-export POSTGRES_URL="postgresql://thewealth:thewealth@localhost:15432/thewealth"
+export POSTGRES_URL="postgresql://thewealth:thewealth@localhost:5433/thewealth"
 export TIMESCALE_URL="postgresql://thewealth:thewealth@localhost:5433/market"
 export REDIS_URL="redis://localhost:6379"
 ENVEOF

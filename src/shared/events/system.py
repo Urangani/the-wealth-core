@@ -14,5 +14,4 @@ class SystemHealthPayload(BaseModel):
 
 class SystemHealthEvent(BaseEvent):
     event_type: Literal["system.health"] = "system.health"
-    event_version: str = "v1"
     payload: SystemHealthPayload

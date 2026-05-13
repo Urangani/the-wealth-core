@@ -9,34 +9,24 @@ The local backbone is defined in `docker-compose.yaml`:
 | Service | Purpose | Host port |
 | --- | --- | --- |
 | `nats` | Authenticated event backbone with JetStream enabled | `4222`, `8222` |
-| `postgres` | Application state | `15432` |
-| `timescaledb` | Market data storage | `5433` |
+| `timescaledb` | Single database for app state + market data | `5433` |
 | `redis` | Cache and fast ephemeral state | `6379` |
 | `market-service` | Deriv market stream + NATS publisher + Timescale writer | `8001` |
-| `execution-service` | Execution service skeleton | `8002` |
-| `strategy-service` | Strategy service skeleton | `8003` |
-| `analytics-service` | Analytics service skeleton | `8004` |
-| `gateway-service` | Gateway service skeleton | `8005` |
+| `gateway-service` | REST API gateway for UI (market queries + system health) | `8005` |
 
 All containers run on the isolated `core` Docker network and use Docker DNS service names for inter-container discovery.
 
 ## Boot Order
 
-Infrastructure starts before service skeletons:
+Infrastructure starts before services:
 
 1. NATS
-2. PostgreSQL
-3. TimescaleDB
-4. Redis
-5. market-service
-6. execution-service
-7. strategy-service
-8. analytics-service
-9. gateway-service
+2. TimescaleDB
+3. Redis
+4. market-service
+5. gateway-service
 
 The Compose file enforces health-gated startup through `depends_on` conditions. Service containers connect to NATS during startup; if NATS is unavailable, the service startup fails instead of pretending the event backbone is alive.
-
-`market-service` also depends on Redis and TimescaleDB at runtime and starts its Deriv connector after infrastructure dependencies come up.
 
 ## Environment
 
@@ -44,10 +34,12 @@ Service containers receive these standard URLs:
 
 ```text
 NATS_URL=nats://thewealth:thewealth_nats@nats:4222
-POSTGRES_URL=postgresql://thewealth:thewealth@postgres:5432/thewealth
+POSTGRES_URL=postgresql://thewealth:thewealth@timescaledb:5432/thewealth
 TIMESCALE_URL=postgresql://thewealth:thewealth@timescaledb:5432/market
 REDIS_URL=redis://redis:6379
 ```
+
+Both `POSTGRES_URL` and `TIMESCALE_URL` point to the same TimescaleDB container, just different databases (`thewealth` for app state, `market` for time-series data).
 
 ## NATS
 
@@ -103,20 +95,20 @@ No service can publish "order.*" events except execution-service.
 
 ## Database Schemas
 
-PostgreSQL initialization SQL lives in `src/infrastructure/postgres/init` and creates:
+TimescaleDB initialization SQL lives in `src/infrastructure/timescaledb/init` and creates two databases on first startup:
 
+**`thewealth` database** (app state):
 - `users`
 - `strategies`
 - `orders`
 - `positions`
 - `events`
 
-TimescaleDB initialization SQL lives in `src/infrastructure/timescaledb/init` and creates hypertables for:
-
-- `ticks`
-- `candles`
-- `features`
-- `indicators`
+**`market` database** (time-series market data):
+- `ticks` (hypertable, 30-day retention)
+- `candles` (hypertable, 180-day retention)
+- `features` (hypertable)
+- `indicators` (hypertable)
 
 The init scripts run automatically on first container startup when the Docker volumes are empty. If an existing local volume predates the scripts, recreate it with `docker compose down -v` before starting the stack again.
 
@@ -130,10 +122,8 @@ Health endpoints:
 
 ```bash
 curl http://localhost:8001/health
-curl http://localhost:8002/health
-curl http://localhost:8003/health
-curl http://localhost:8004/health
 curl http://localhost:8005/health
+curl http://localhost:8005/api/v1/system/health
 ```
 
 NATS monitoring:

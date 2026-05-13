@@ -79,7 +79,7 @@ Stop containers and delete local database/cache volumes:
 docker compose down -v
 ```
 
-Use `down -v` only when you want PostgreSQL, TimescaleDB, Redis, and NATS local data recreated from scratch.
+Use `down -v` only when you want TimescaleDB, Redis, and NATS local data recreated from scratch.
 
 ## Logs
 
@@ -104,7 +104,6 @@ docker compose logs --tail=100 nats
 Show logs for database startup and init scripts:
 
 ```bash
-docker compose logs --tail=200 postgres
 docker compose logs --tail=200 timescaledb
 ```
 
@@ -114,17 +113,8 @@ Check service health endpoints from the host:
 
 ```bash
 curl http://localhost:8001/health
-curl http://localhost:8002/health
-curl http://localhost:8003/health
-curl http://localhost:8004/health
 curl http://localhost:8005/health
-```
-
-Check readiness endpoints:
-
-```bash
-curl http://localhost:8001/ready
-curl http://localhost:8002/ready
+curl http://localhost:8005/api/v1/system/health
 ```
 
 Check NATS monitoring:
@@ -158,19 +148,6 @@ Run tests with verbose output:
 
 ```bash
 docker compose exec market-service pytest -vv /app/src/tests
-```
-
-Run syntax checks for shared modules:
-
-```bash
-docker compose exec market-service python -m py_compile \
-  /app/src/shared/events/base.py \
-  /app/src/shared/events/market.py \
-  /app/src/shared/events/order.py \
-  /app/src/shared/events/position.py \
-  /app/src/shared/events/signal.py \
-  /app/src/shared/events/system.py \
-  /app/src/shared/nats_client.py
 ```
 
 ## NATS Debugging
@@ -212,51 +189,22 @@ docker compose logs --tail=100 nats
 docker compose exec market-service env | grep NATS_URL
 ```
 
-## PostgreSQL Debugging
+## Database Debugging (TimescaleDB)
 
-Open a PostgreSQL shell:
+The single TimescaleDB container runs both databases (`thewealth` for app state, `market` for market data).
 
-```bash
-docker compose exec postgres psql -U thewealth -d thewealth
-```
-
-List application tables:
-
-```bash
-docker compose exec postgres psql -U thewealth -d thewealth -c "\dt"
-```
-
-Describe a table:
-
-```bash
-docker compose exec postgres psql -U thewealth -d thewealth -c "\d orders"
-```
-
-Count rows in core tables:
-
-```bash
-docker compose exec postgres psql -U thewealth -d thewealth -c "SELECT COUNT(*) FROM users;"
-docker compose exec postgres psql -U thewealth -d thewealth -c "SELECT COUNT(*) FROM events;"
-```
-
-Apply the app schema to an existing volume:
-
-```bash
-docker compose exec postgres psql -U thewealth -d thewealth -f /docker-entrypoint-initdb.d/001_app_schema.sql
-```
-
-## TimescaleDB Debugging
-
-Open a TimescaleDB shell:
+Open a database shell:
 
 ```bash
 docker compose exec timescaledb psql -U thewealth -d market
+docker compose exec timescaledb psql -U thewealth -d thewealth
 ```
 
-List market tables:
+List tables:
 
 ```bash
 docker compose exec timescaledb psql -U thewealth -d market -c "\dt"
+docker compose exec timescaledb psql -U thewealth -d thewealth -c "\dt"
 ```
 
 Confirm hypertables:
@@ -265,16 +213,25 @@ Confirm hypertables:
 docker compose exec timescaledb psql -U thewealth -d market -c "SELECT hypertable_name FROM timescaledb_information.hypertables;"
 ```
 
-Describe a market table:
+Describe a table:
 
 ```bash
 docker compose exec timescaledb psql -U thewealth -d market -c "\d candles"
+docker compose exec timescaledb psql -U thewealth -d thewealth -c "\d orders"
 ```
 
-Apply the market schema to an existing volume:
+Count rows:
 
 ```bash
-docker compose exec timescaledb psql -U thewealth -d market -f /docker-entrypoint-initdb.d/001_market_schema.sql
+docker compose exec timescaledb psql -U thewealth -d thewealth -c "SELECT COUNT(*) FROM users;"
+docker compose exec timescaledb psql -U thewealth -d market -c "SELECT COUNT(*) FROM ticks;"
+```
+
+Apply init schemas to an existing volume:
+
+```bash
+docker compose exec timescaledb psql -U thewealth -d thewealth -f /docker-entrypoint-initdb.d/002_app_schema.sql
+docker compose exec timescaledb psql -U thewealth -d market -f /docker-entrypoint-initdb.d/003_market_schema.sql
 ```
 
 ## Container Analysis
@@ -307,8 +264,7 @@ Inspect local volumes:
 
 ```bash
 docker volume ls | grep thewealth-core
-docker volume inspect thewealth-core_pgdata
-docker volume inspect thewealth-core_tsdata
+docker volume inspect thewealth-core_dbdata
 ```
 
 ## Common Debug Flows
@@ -334,10 +290,10 @@ docker compose exec market-service python /app/src/infrastructure/scripts/check_
 When database tables are missing:
 
 ```bash
-docker compose exec postgres psql -U thewealth -d thewealth -c "\dt"
+docker compose exec timescaledb psql -U thewealth -d thewealth -c "\dt"
 docker compose exec timescaledb psql -U thewealth -d market -c "\dt"
-docker compose exec postgres psql -U thewealth -d thewealth -f /docker-entrypoint-initdb.d/001_app_schema.sql
-docker compose exec timescaledb psql -U thewealth -d market -f /docker-entrypoint-initdb.d/001_market_schema.sql
+docker compose exec timescaledb psql -U thewealth -d thewealth -f /docker-entrypoint-initdb.d/002_app_schema.sql
+docker compose exec timescaledb psql -U thewealth -d market -f /docker-entrypoint-initdb.d/003_market_schema.sql
 ```
 
 When the stack needs a fully clean database:

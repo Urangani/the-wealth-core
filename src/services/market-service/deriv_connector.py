@@ -7,10 +7,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import websockets
-
 from config import MarketServiceSettings
 from models import ProviderStatus, StreamCandle, StreamTick
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +57,10 @@ class DerivWebSocketConnector:
                         detail="will-reconnect",
                     )
                 )
-                await asyncio.sleep(self.settings.reconnect_delay_seconds)
+                for _ in range(int(self.settings.reconnect_delay_seconds / 0.1)):
+                    if stop_event.is_set():
+                        return
+                    await asyncio.sleep(0.1)
 
     async def _run_session(
         self,
@@ -141,9 +142,7 @@ class DerivWebSocketConnector:
 
         return [item for item in symbols if item.market in self.settings.deriv_symbol_filter_markets]
 
-    async def _subscribe_ticks(
-        self, ws: websockets.WebSocketClientProtocol, symbols: list[DerivSymbol]
-    ) -> None:
+    async def _subscribe_ticks(self, ws: websockets.WebSocketClientProtocol, symbols: list[DerivSymbol]) -> None:
         for item in symbols:
             await self._send(
                 ws,
@@ -153,9 +152,7 @@ class DerivWebSocketConnector:
                 },
             )
 
-    async def _subscribe_candles(
-        self, ws: websockets.WebSocketClientProtocol, symbols: list[DerivSymbol]
-    ) -> None:
+    async def _subscribe_candles(self, ws: websockets.WebSocketClientProtocol, symbols: list[DerivSymbol]) -> None:
         for item in symbols:
             for granularity in self.settings.candle_granularities:
                 await self._send(
@@ -170,9 +167,7 @@ class DerivWebSocketConnector:
                     },
                 )
 
-    async def _send(
-        self, ws: websockets.WebSocketClientProtocol, payload: dict[str, Any]
-    ) -> None:
+    async def _send(self, ws: websockets.WebSocketClientProtocol, payload: dict[str, Any]) -> None:
         self._req_id += 1
         request = dict(payload)
         request["req_id"] = self._req_id

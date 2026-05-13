@@ -4,8 +4,6 @@ import asyncio
 import logging
 from typing import Any
 
-from shared.nats_client import NatsClient
-
 from config import MarketServiceSettings
 from deriv_connector import DerivWebSocketConnector
 from fallback_provider import FallbackMarketProvider
@@ -13,6 +11,7 @@ from models import NormalizedMarketEvent, ProviderStatus, StreamCandle, StreamTi
 from normalization import normalize_deriv_candle, normalize_deriv_tick
 from timescale_writer import BatchBuffer, TimescaleWriter, periodic_flush
 
+from shared.nats_client import NatsClient
 
 LOGGER = logging.getLogger(__name__)
 
@@ -129,7 +128,10 @@ class MarketPipeline:
         if normalized.candle_record is not None:
             self.buffer.add_candle(normalized.candle_record)
 
-        if len(self.buffer.ticks) >= self.settings.batch_flush_size or len(self.buffer.candles) >= self.settings.batch_flush_size:
+        if (
+            len(self.buffer.ticks) >= self.settings.batch_flush_size
+            or len(self.buffer.candles) >= self.settings.batch_flush_size
+        ):
             await self._flush_buffer()
 
     async def _flush_buffer(self) -> None:

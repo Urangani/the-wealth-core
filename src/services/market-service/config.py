@@ -49,7 +49,7 @@ class MarketServiceSettings:
     candle_retention_days: int
 
     @classmethod
-    def from_env(cls) -> "MarketServiceSettings":
+    def from_env(cls) -> MarketServiceSettings:
         app_id = os.getenv("DERIV_APP_ID", "1089")
         deriv_ws_url = os.getenv(
             "DERIV_WS_URL",
@@ -64,9 +64,7 @@ class MarketServiceSettings:
             if token.strip()
         )
 
-        granularities = [
-            int(value) for value in _env_csv("MARKET_CANDLE_GRANULARITIES") or ["60"]
-        ]
+        granularities = [int(value) for value in _env_csv("MARKET_CANDLE_GRANULARITIES") or ["60"]]
         granularities = sorted(set(granularities))
 
         return cls(

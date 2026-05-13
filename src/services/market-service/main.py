@@ -6,14 +6,13 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI
-
 from config import MarketServiceSettings
+from fastapi import FastAPI
 from pipeline import MarketPipeline
+
 from shared.events import SystemHealthEvent, SystemHealthPayload
 from shared.nats_client import NatsClient
 from shared.redis_client import RedisClient
-
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
@@ -69,7 +68,7 @@ def create_market_service_app() -> FastAPI:
     app = FastAPI(title="market-service", lifespan=lifespan)
 
     @app.get("/health")
-    def health() -> dict[str, Any]:
+    async def health() -> dict[str, Any]:
         service_status = "healthy"
         if not nats.is_connected or not redis.is_connected:
             service_status = "degraded"
@@ -90,14 +89,14 @@ def create_market_service_app() -> FastAPI:
         }
 
     @app.get("/ready")
-    def ready() -> dict[str, bool | str]:
+    async def ready() -> dict[str, bool | str]:
         return {
             "service": "market-service",
             "ready": nats.is_connected and redis.is_connected,
         }
 
     @app.get("/market/status")
-    def market_status() -> dict[str, Any]:
+    async def market_status() -> dict[str, Any]:
         return {
             "provider_mode": pipeline.provider_mode,
             "processed_ticks": pipeline.processed_ticks,

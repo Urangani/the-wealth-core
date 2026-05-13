@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
+
+from models import CandleRecord, NormalizedMarketEvent, TickRecord
 
 from shared.events import (
     MarketCandleEvent,
@@ -9,8 +11,6 @@ from shared.events import (
     MarketTickEvent,
     MarketTickPayload,
 )
-
-from models import CandleRecord, NormalizedMarketEvent, TickRecord
 
 
 def _as_float(value: Any) -> float | None:
@@ -21,8 +21,8 @@ def _as_float(value: Any) -> float | None:
 
 def _epoch_to_dt(value: Any) -> datetime:
     if value is None:
-        return datetime.now(timezone.utc)
-    return datetime.fromtimestamp(float(value), tz=timezone.utc)
+        return datetime.now(UTC)
+    return datetime.fromtimestamp(float(value), tz=UTC)
 
 
 def normalize_deriv_tick(message: dict[str, Any], source: str = "deriv") -> NormalizedMarketEvent:

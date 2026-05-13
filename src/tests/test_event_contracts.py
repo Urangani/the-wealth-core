@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -21,7 +21,7 @@ def test_market_tick_event_serializes_with_versioned_subject() -> None:
             symbol="EURUSD",
             bid=1.1,
             ask=1.1002,
-            exchange_timestamp=datetime.now(timezone.utc),
+            exchange_timestamp=datetime.now(UTC),
         ),
     )
 
@@ -43,7 +43,7 @@ def test_signal_payload_validation() -> None:
                 side="buy",
                 strength=1.2,
                 confidence=0.9,
-                generated_at=datetime.now(timezone.utc),
+                generated_at=datetime.now(UTC),
             ),
         )
 
@@ -58,7 +58,7 @@ def test_only_execution_service_can_publish_order_subjects() -> None:
             side="buy",
             order_type="market",
             quantity=1,
-            submitted_at=datetime.now(timezone.utc),
+            submitted_at=datetime.now(UTC),
         ),
     )
 

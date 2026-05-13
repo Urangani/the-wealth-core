@@ -2,10 +2,9 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlparse
 
-from nats.aio.client import Client as NATS
+from nats.aio.client import Client as NatsConnection
 
 from shared.events import BaseEvent
-
 
 MessageCallback = Callable[[Any], Awaitable[None]]
 
@@ -16,7 +15,7 @@ class OrderPublishPermissionError(PermissionError):
 
 class NatsClient:
     def __init__(self, url: str = "nats://localhost:4222", service_name: str = "unknown"):
-        self.nc = NATS()
+        self.nc = NatsConnection()
         self.url = url
         self.service_name = service_name
 
@@ -54,6 +53,4 @@ class NatsClient:
         tokens = subject.split(".")
         event_type = ".".join(tokens[1:]) if tokens and tokens[0].startswith("v") else subject
         if event_type.startswith("order.") and self.service_name != "execution-service":
-            raise OrderPublishPermissionError(
-                'Only execution-service can publish "order.*" events'
-            )
+            raise OrderPublishPermissionError('Only execution-service can publish "order.*" events')

@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from shared.events import SystemHealthEvent
+from shared.events import SystemHealthEvent, SystemHealthPayload
 from shared.nats_client import NatsClient
 from shared.redis_client import RedisClient
 
@@ -26,20 +26,20 @@ def create_service_app(service_name: str) -> FastAPI:
         await nats.connect()
         state["nats_connected"] = True
         app.state.nats = nats
-        
+
         await redis.connect()
         state["redis_connected"] = True
         app.state.redis = redis
-        
+
         await nats.publish_event(
             SystemHealthEvent(
                 source=service_name,
-                payload={
-                    "service": service_name,
-                    "status": "healthy",
-                    "latency_ms": 0,
-                    "uptime": 0,
-                },
+                payload=SystemHealthPayload(
+                    service=service_name,
+                    status="healthy",
+                    latency_ms=0,
+                    uptime=0,
+                ),
             )
         )
         yield
@@ -49,8 +49,12 @@ def create_service_app(service_name: str) -> FastAPI:
     app = FastAPI(title=service_name, lifespan=lifespan)
 
     @app.get("/health")
-    def health() -> dict[str, Any]:
-        status = "healthy" if state["nats_connected"] and state["redis_connected"] and nats.is_connected and redis.is_connected else "degraded"
+    async def health() -> dict[str, Any]:
+        status = (
+            "healthy"
+            if state["nats_connected"] and state["redis_connected"] and nats.is_connected and redis.is_connected
+            else "degraded"
+        )
         return {
             "service": service_name,
             "status": status,
@@ -60,7 +64,7 @@ def create_service_app(service_name: str) -> FastAPI:
         }
 
     @app.get("/ready")
-    def ready() -> dict[str, bool | str]:
+    async def ready() -> dict[str, bool | str]:
         return {
             "service": service_name,
             "ready": nats.is_connected and redis.is_connected,

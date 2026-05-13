@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from collections.abc import Sequence
 
 import asyncpg
-
 from config import MarketServiceSettings
 from models import CandleRecord, TickRecord
 
@@ -87,16 +85,6 @@ class TimescaleWriter:
                     for candle in candles
                 ],
             )
-
-    async def insert_raw_event(self, event_json: str) -> None:
-        if not self.pool:
-            return
-        query = """
-            INSERT INTO features (time, symbol, feature_set, values, source)
-            VALUES (NOW(), 'market-service', 'raw_event', $1::jsonb, 'market-service')
-        """
-        async with self.pool.acquire() as conn:
-            await conn.execute(query, json.dumps({"event": event_json}))
 
     async def _apply_retention_policies(self) -> None:
         if not self.pool:

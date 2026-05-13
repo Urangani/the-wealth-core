@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 import redis
@@ -9,7 +9,7 @@ class RedisClient:
 
     def __init__(self, url: str = "redis://localhost:6379"):
         self.url = url
-        self.client: Optional[redis.Redis] = None
+        self.client: redis.Redis | None = None
         self._parse_url()
 
     def _parse_url(self) -> None:
@@ -35,7 +35,7 @@ class RedisClient:
             # Test connection
             self.client.ping()
         except Exception as e:
-            raise ConnectionError(f"Failed to connect to Redis at {self.url}: {e}")
+            raise ConnectionError(f"Failed to connect to Redis at {self.url}: {e}") from e
 
     async def close(self) -> None:
         """Close Redis connection."""
@@ -59,17 +59,15 @@ class RedisClient:
         if not self.client:
             raise RuntimeError("Redis client not connected")
         import json
-        self.client.setex(
-            f"session:{session_id}",
-            ttl,
-            json.dumps(data)
-        )
 
-    async def get_session(self, session_id: str) -> Optional[dict[str, Any]]:
+        self.client.setex(f"session:{session_id}", ttl, json.dumps(data))
+
+    async def get_session(self, session_id: str) -> dict[str, Any] | None:
         """Retrieve session data."""
         if not self.client:
             raise RuntimeError("Redis client not connected")
         import json
+
         data = self.client.get(f"session:{session_id}")
         return json.loads(data) if data else None
 
@@ -86,7 +84,7 @@ class RedisClient:
             raise RuntimeError("Redis client not connected")
         self.client.setex(f"jwt:{token}", ttl, user_id)
 
-    async def get_jwt_token(self, token: str) -> Optional[str]:
+    async def get_jwt_token(self, token: str) -> str | None:
         """Retrieve JWT token validation data."""
         if not self.client:
             raise RuntimeError("Redis client not connected")
@@ -104,15 +102,17 @@ class RedisClient:
         if not self.client:
             raise RuntimeError("Redis client not connected")
         import json
+
         if not isinstance(value, str):
             value = json.dumps(value)
         self.client.setex(f"cache:{key}", ttl, value)
 
-    async def get_cache(self, key: str) -> Optional[Any]:
+    async def get_cache(self, key: str) -> Any | None:
         """Retrieve temporary cache data."""
         if not self.client:
             raise RuntimeError("Redis client not connected")
         import json
+
         data = self.client.get(f"cache:{key}")
         if not data:
             return None
@@ -128,11 +128,12 @@ class RedisClient:
         self.client.delete(f"cache:{key}")
 
     # Generic operations
-    async def set_key(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    async def set_key(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Set a key with optional TTL."""
         if not self.client:
             raise RuntimeError("Redis client not connected")
         import json
+
         if not isinstance(value, str):
             value = json.dumps(value)
         if ttl:
@@ -140,11 +141,12 @@ class RedisClient:
         else:
             self.client.set(key, value)
 
-    async def get_key(self, key: str) -> Optional[Any]:
+    async def get_key(self, key: str) -> Any | None:
         """Get a key value."""
         if not self.client:
             raise RuntimeError("Redis client not connected")
         import json
+
         data = self.client.get(key)
         if not data:
             return None

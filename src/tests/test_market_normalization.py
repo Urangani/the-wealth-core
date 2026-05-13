@@ -1,11 +1,8 @@
-from datetime import datetime, timezone
-from pathlib import Path
 import sys
+from datetime import UTC, datetime
+from pathlib import Path
 
-
-MARKET_SERVICE_PATH = (
-    Path(__file__).resolve().parents[1] / "services" / "market-service"
-)
+MARKET_SERVICE_PATH = Path(__file__).resolve().parents[1] / "services" / "market-service"
 if str(MARKET_SERVICE_PATH) not in sys.path:
     sys.path.insert(0, str(MARKET_SERVICE_PATH))
 
@@ -51,7 +48,7 @@ def test_normalize_deriv_candle_maps_to_contract() -> None:
     assert normalized.event.subject == "v1.market.candle"
     assert normalized.event.payload.symbol == "R_100"
     assert normalized.event.payload.timeframe == "60s"
-    assert normalized.event.payload.candle_start.tzinfo == timezone.utc
+    assert normalized.event.payload.candle_start.tzinfo == UTC
     assert isinstance(normalized.event.payload.candle_end, datetime)
     assert normalized.candle_record is not None
     assert normalized.candle_record.source == "fallback"

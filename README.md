@@ -4,13 +4,14 @@ Distributed event-driven trading system backbone with a live market-data ingesti
 
 This repository currently contains:
 
-- Docker Compose infrastructure for NATS, PostgreSQL, TimescaleDB, Redis, and service skeletons
+- Docker Compose infrastructure for NATS, TimescaleDB, Redis, market-service, and gateway
 - authenticated NATS with versioned event subjects
-- PostgreSQL and TimescaleDB initialization schemas
+- TimescaleDB initialization schemas (single database handles app state + market data)
 - shared, versioned Pydantic event schemas
 - a shared NATS client wrapper
-- FastAPI health endpoints for every core service
+- FastAPI health endpoints for every service
 - Deriv WebSocket market connector (ticks + candles), NATS publication, Timescale persistence, and fallback feed in `market-service`
+- REST API gateway for UI consumption
 - local connectivity verification scripts
 
 No strategy execution logic, broker order integration, or machine learning models are implemented yet.
@@ -24,15 +25,12 @@ docker compose up --build
 Service health endpoints:
 
 - market-service: http://localhost:8001/health
-- execution-service: http://localhost:8002/health
-- strategy-service: http://localhost:8003/health
-- analytics-service: http://localhost:8004/health
 - gateway-service: http://localhost:8005/health
+- Aggregated system health: http://localhost:8005/api/v1/system/health
 
-Database ports:
+Database port:
 
-- PostgreSQL: `localhost:15432`
-- TimescaleDB: `localhost:5433`
+- TimescaleDB (single DB for all state): `localhost:5433`
 
 Run connectivity checks once the stack is healthy:
 
