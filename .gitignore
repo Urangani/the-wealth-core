@@ -36,3 +36,7 @@ Thumbs.db
 docker-compose.override.yaml
 data/
 volumes/
+
+# AI
+AGENTS.md
+agile/
