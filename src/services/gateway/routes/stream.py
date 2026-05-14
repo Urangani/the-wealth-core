@@ -88,11 +88,25 @@ async def _stream_loop() -> None:
         await asyncio.sleep(0.5)
 
 
+ALLOWED_WS_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8005",
+    "http://127.0.0.1:8005",
+]
+
+
 @router.websocket("/ws/market")
 async def market_stream(ws: WebSocket) -> None:
+    origin = ws.headers.get("origin", "")
+    if origin and not any(o in origin for o in ["localhost", "127.0.0.1", "gateway-service"]):
+        await ws.close(code=1008, reason="origin not allowed")
+        return
     await ws.accept()
     _active_connections.append(ws)
-    LOGGER.info("WebSocket client connected")
+    LOGGER.info("WebSocket client connected from origin: %s", origin)
     try:
         while True:
             await ws.receive_text()
