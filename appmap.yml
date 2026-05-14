@@ -2,3 +2,10 @@ name: the-wealth-core
 packages:
   - path: shared
     shallow: true
+  - path: config
+  - path: pipeline
+  - path: deriv_connector
+  - path: fallback_provider
+  - path: normalization
+  - path: timescale_writer
+  - path: models

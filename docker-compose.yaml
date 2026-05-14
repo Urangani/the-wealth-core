@@ -147,6 +147,25 @@ services:
     networks:
       - core
 
+  ui-dev:
+    build:
+      context: ../the-wealth-ui
+      dockerfile: Dockerfile.dev
+    container_name: thewealth-ui-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../the-wealth-ui:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: http://gateway-service:8000
+      VITE_WS_URL: ws://gateway-service:8000/ws/market
+    depends_on:
+      gateway-service:
+        condition: service_healthy
+    networks:
+      - core
+
 networks:
   core:
     driver: bridge
